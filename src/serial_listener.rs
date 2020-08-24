@@ -48,7 +48,9 @@ fn connect_port(port_name: String, msg_tx: Sender<String>, cmd_rx: Receiver<Opti
                 match b.read_line(&mut s){
                     Ok(_) => {
                         s = s.trim().to_owned();
-                        msg_tx.send(s).expect("Fail to insert");
+                        if s.len() > 0{
+                            msg_tx.send(s).expect("Failed to insert");
+                        }
                     }
                     Err(ref e) if e.kind() == io::ErrorKind::TimedOut => (),
                     Err(_) => {
