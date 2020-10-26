@@ -4,9 +4,9 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
 use std::collections::hash_map::HashMap;
 
-pub fn init(msg_rx: Receiver<String>) {
+pub fn init(msg_rx: Receiver<String>, data_tx: tokio::sync::broadcast::Sender<String>) {
     thread::spawn(move || {
-        print_msg(msg_rx);
+        print_msg(msg_rx, data_tx);
     });
 }
 
@@ -34,7 +34,7 @@ fn flatten(prefix: String, msg: Value) -> Vec<(String, Value)> {
     }
 }
 
-fn print_msg(msg_rx: Receiver<String>) {
+fn print_msg(msg_rx: Receiver<String>, data_tx: tokio::sync::broadcast::Sender<String>) {
     let mut data : HashMap<String, Value> = HashMap::new();
 
     loop {
@@ -50,13 +50,13 @@ fn print_msg(msg_rx: Receiver<String>) {
             println!("Could not parse str of len {} : {}", s.len(), s);
         }
 
-        
-        print!("\x1B[2J\x1B[1;1H");
-        for (k,v) in data.iter().filter(|(k,v)| k.find("tick") != None){
-            println!("{}: {}",k,v);
-        }
+        //print!("\x1B[2J\x1B[1;1H");
+        let s : Vec<String>  = data.iter().filter(|(k,_)| k.find("tick") != None).map(|(k,v)| format!("{} : {}", k, v) ).collect();
+
+        let s = s.join("\n");
 
         //push data into broadcast channel
+        data_tx.send(s).unwrap();
 
     }
 }

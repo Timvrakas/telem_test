@@ -4,23 +4,63 @@ use std::thread;
 
 use std::collections::HashMap;
 use std::collections::HashSet;
+//use sqlx::postgres::PgPool;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
-mod serial_listener;
+mod handler;
 mod msg_decoder;
+mod serial_listener;
+mod server;
+mod ws;
 
 fn main() {
+    //This pipe caries data from the serial port threads to msg_decoder thread
     let (msg_tx, msg_rx): (Sender<String>, Receiver<String>) = mpsc::channel();
 
+    //All active serial ports are registered here
     let mut active_ports: HashMap<String, (Sender<Option<String>>, thread::JoinHandle<()>)> =
         HashMap::new();
 
-    msg_decoder::init(msg_rx);
+    //All web clients are registered here
+    let clients: crate::server::Clients = Arc::new(RwLock::new(HashMap::new()));
 
+    let (data_tx, mut data_rx1): (
+        tokio::sync::broadcast::Sender<String>,
+        tokio::sync::broadcast::Receiver<String>,
+    ) = tokio::sync::broadcast::channel(100);
+
+    //Spawns a new thread that runs tokio async tasks
+    std::thread::spawn(move || {
+        let mut rt = tokio::runtime::Runtime::new().unwrap();
+        
+        //print data from MPMC broadcast channel
+        let print_fut = async move {
+            println!("Kek");
+            loop {
+                let rx = data_rx1.recv().await.expect("Error");
+                println!("{}", rx);
+            }
+        };
+
+        //start the websocket server
+        let serve_fut = server::server(clients.clone());
+
+        //join all tasks
+        rt.block_on(async move {
+            tokio::join!(print_fut, serve_fut);
+        });
+    });
+
+    //The msg_decoder turns lines from connected serial ports into KV data structures
+    msg_decoder::init(msg_rx, data_tx);
+
+    //greedy USB serial connection loop
     loop {
         let new_ports: HashSet<String> = serialport::available_ports()
             .expect("Could not read serial ports!")
             .into_iter()
-            .filter(|p| !matches!(p.port_type, serialport::SerialPortType::Unknown))
+            .filter(|p| !matches!(p.port_type, serialport::SerialPortType::Unknown)) //Why is this not USB?
             .map(|x| x.port_name)
             .collect();
 
@@ -43,7 +83,5 @@ fn main() {
                 }
             })
             .collect();
-
-        
     }
 }
