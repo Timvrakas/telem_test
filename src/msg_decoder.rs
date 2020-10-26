@@ -52,6 +52,7 @@ fn print_msg(msg_rx: Receiver<String>, data_tx: tokio::sync::broadcast::Sender<S
 
         let s : Vec<String>  = data.iter().filter(|(k,_)| k.find("tick") != None).map(|(k,v)| format!("{} : {}", k, v) ).collect();
 
+        
         let s = s.join("\n");
 
         //push data into broadcast channel

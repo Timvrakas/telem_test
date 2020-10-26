@@ -30,13 +30,13 @@ fn main() {
         tokio::sync::broadcast::Receiver<String>,
     ) = tokio::sync::broadcast::channel(100);
 
+    let data_rx2 = data_tx.subscribe();
     //Spawns a new thread that runs tokio async tasks
     std::thread::spawn(move || {
         let mut rt = tokio::runtime::Runtime::new().unwrap();
         
         //print data from MPMC broadcast channel
         let print_fut = async move {
-            println!("Kek");
             loop {
                 let rx = data_rx1.recv().await.expect("Error");
                 print!("\x1B[2J\x1B[1;1H");
@@ -45,7 +45,7 @@ fn main() {
         };
 
         //start the websocket server
-        let serve_fut = server::server(clients.clone());
+        let serve_fut = server::server(clients.clone(), data_rx2);
 
         //join all tasks
         rt.block_on(async move {

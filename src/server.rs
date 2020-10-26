@@ -17,7 +17,18 @@ pub struct Client {
     pub sender: Option<mpsc::UnboundedSender<std::result::Result<Message, warp::Error>>>,
 }
 
-pub async fn server(clients : Clients) {
+pub async fn server(clients : Clients, mut data_to_send : tokio::sync::broadcast::Receiver<String> ) {
+
+    let clients_new = clients.clone();
+    tokio::spawn(async move {
+        while let Ok(result) = data_to_send.recv().await {
+            for x in clients_new.read().await.values(){
+                if let Some(sender) = &x.sender {
+                    let _ = sender.send(Ok(Message::text(result.clone())));
+                }
+            }
+        }
+    });
 
     let health_route = warp::path!("health").and_then(handler::health_handler);
 
