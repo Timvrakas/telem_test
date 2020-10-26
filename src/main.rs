@@ -39,6 +39,7 @@ fn main() {
             println!("Kek");
             loop {
                 let rx = data_rx1.recv().await.expect("Error");
+                print!("\x1B[2J\x1B[1;1H");
                 println!("{}", rx);
             }
         };

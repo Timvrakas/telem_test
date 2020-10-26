@@ -50,7 +50,6 @@ fn print_msg(msg_rx: Receiver<String>, data_tx: tokio::sync::broadcast::Sender<S
             println!("Could not parse str of len {} : {}", s.len(), s);
         }
 
-        //print!("\x1B[2J\x1B[1;1H");
         let s : Vec<String>  = data.iter().filter(|(k,_)| k.find("tick") != None).map(|(k,v)| format!("{} : {}", k, v) ).collect();
 
         let s = s.join("\n");
