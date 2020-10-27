@@ -12,7 +12,7 @@ pub struct TopicsRequest {
 
 pub async fn client_connection(ws: WebSocket, id: String, clients: Clients, mut client: Client) {
     let (client_ws_sender, mut client_ws_rcv) = ws.split();
-    let (client_sender, client_rcv) = mpsc::unbounded_channel();//get rid of this
+    let (client_sender, client_rcv) = mpsc::unbounded_channel();
 
     tokio::task::spawn(client_rcv.forward(client_ws_sender).map(|result| {
         if let Err(e) = result {
@@ -20,8 +20,8 @@ pub async fn client_connection(ws: WebSocket, id: String, clients: Clients, mut 
         }
     }));
 
-    client.sender = Some(client_sender);//get rid of this
-    clients.write().await.insert(id.clone(), client);//get rid of this
+    client.sender = Some(client_sender);
+    clients.write().await.insert(id.clone(), client);
 
     println!("{} connected", id);
 
