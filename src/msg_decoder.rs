@@ -35,8 +35,6 @@ fn flatten(prefix: String, msg: Value) -> Vec<(String, Value)> {
 }
 
 fn print_msg(msg_rx: Receiver<String>, data_tx: tokio::sync::broadcast::Sender<String>) {
-    let mut data : HashMap<String, Value> = HashMap::new();
-
     loop {
         let s = msg_rx.recv().unwrap();
         let x = serde_json::from_str(&s);
@@ -44,17 +42,18 @@ fn print_msg(msg_rx: Receiver<String>, data_tx: tokio::sync::broadcast::Sender<S
             let x: Value = x.unwrap();
             let id = x.as_object().unwrap()["id"].as_str().unwrap();
             let flat = flatten(id.to_owned(), x);
-            //println!("{:?}", flat);
-            data.extend(flat.into_iter());
+            let map: HashMap<_, _> = flat.into_iter().collect();
+            let s = serde_json::to_string(&map).unwrap();
+            data_tx.send(s).unwrap();
         } else {
             println!("Could not parse str of len {} : {}", s.len(), s);
         }
 
-        let mut s = serde_json::to_string(&data).unwrap();
+        //let mut s = serde_json::to_string(&flat).unwrap();
         //let s : Vec<String>  = data.iter().filter(|(k,_)| k.find("tick") != None).map(|(k,v)| format!("{} : {}", k, v) ).collect();
         //s.push_str("\r");
         //push data into broadcast channel
-        data_tx.send(s).unwrap();
+        
 
     }
 }

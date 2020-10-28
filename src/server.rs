@@ -55,9 +55,13 @@ pub async fn server(clients: Clients, mut data_to_send: tokio::sync::broadcast::
         .and(with_clients(clients.clone()))
         .and_then(handler::sub_handler);
 
+    let static_route = warp::path("html")
+        .and(warp::fs::dir("C:\\Users\\timv\\Git\\telem_test\\html"));
+
     let routes = health_route
         .or(register_routes)
         .or(ws_route)
+        .or(static_route)
         .with(warp::cors().allow_any_origin());
 
     warp::serve(routes).run(([0, 0, 0, 0], 8000)).await;
