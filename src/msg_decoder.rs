@@ -40,6 +40,7 @@ fn print_msg(msg_rx: Receiver<String>, data_tx: tokio::sync::broadcast::Sender<S
         let x = serde_json::from_str(&s);
         if x.is_ok() {
             let x: Value = x.unwrap();
+            //println!("{}", x.as_object().unwrap()["tick"]);
             let id = x.as_object().unwrap()["id"].as_str().unwrap();
             let flat = flatten(id.to_owned(), x);
             let map: HashMap<_, _> = flat.into_iter().collect();
